@@ -1,0 +1,121 @@
+{
+  "reviewedAt": "2026-11-16T10:43:38.275Z",
+  "jobs": [
+    {
+      "patternDetail": "Employer lists UK-only remote work; confirm any attendance expectations",
+      "industry": "Video infrastructure / digital health",
+      "dateChecked": "2026-11-16",
+      "contact": "",
+      "followUp": "",
+      "isApplied": false,
+      "isRejected": false,
+      "shortlisted": false,
+      "lastAction": "",
+      "status": "New",
+      "id": "research-whereby-ae-2026-11",
+      "company": "Whereby",
+      "role": "Account Executive",
+      "location": "United Kingdom",
+      "pattern": "Remote",
+      "employment": "Permanent",
+      "datePosted": "2026-11-06",
+      "url": "https://jobs.lever.co/whereby/5b65c373-e4c7-4216-804e-4f2336431043",
+      "source": "Whereby careers (official); 6 Nov date via Careertela",
+      "sourceQuality": "Employer confirms permanent UK-remote and £55,000 annual base; posting date independently indexed on 6 Nov; still check before applying.",
+      "salaryMin": 55000,
+      "salaryMax": 55000,
+      "salaryText": "Guaranteed annual base £55,000 + uncapped commission (employer advertised)",
+      "salaryVerified": true,
+      "fitScore": 88,
+      "strengths": [
+        "Consultative full-cycle B2B new business and customer discovery",
+        "Self-sourced outbound pipeline, multi-stakeholder negotiation and closing",
+        "Experience selling AI/SaaS solutions and developing ROI-led business cases"
+      ],
+      "gaps": [
+        "No verified experience selling developer APIs or digital healthcare solutions",
+        "Technical evaluations and healthcare-sector procurement would require preparation"
+      ],
+      "reviewFlag": "Specialist API/healthcare experience gap; check eligibility and live status",
+      "notes": "Research lead from official Whereby careers page on 16 Nov 2026. Date posted via independent listing. No application or recruiter contact authorised."
+    },
+    {
+      "patternDetail": "Employer lists UK-only remote work; confirm any attendance expectations",
+      "industry": "Video infrastructure / digital health",
+      "dateChecked": "2026-11-16",
+      "contact": "",
+      "followUp": "",
+      "isApplied": false,
+      "isRejected": false,
+      "shortlisted": false,
+      "lastAction": "",
+      "status": "New",
+      "id": "research-whereby-sam-2026-11",
+      "company": "Whereby",
+      "role": "Strategic Account Manager",
+      "location": "United Kingdom",
+      "pattern": "Remote",
+      "employment": "Permanent",
+      "datePosted": "2026-11-05",
+      "url": "https://jobs.lever.co/whereby/b86f09d5-cafe-4030-9426-7344c8c1854a",
+      "source": "Whereby careers (official); 5 Nov date via Remote.com",
+      "sourceQuality": "Employer confirms permanent, full-time UK-only remote and annual £72,000–£77,000 salary, with separate bonus.",
+      "salaryMin": 72000,
+      "salaryMax": 77000,
+      "salaryText": "Guaranteed annual base £72,000–£77,000; bonus up to 20% extra",
+      "salaryVerified": true,
+      "fitScore": 80,
+      "strengths": [
+        "£180k expansion ARR outside new-business quota at SalesAPE.ai",
+        "Proactive account growth and retention-focused client relationships at ADI",
+        "Commercial proposals, senior stakeholder engagement and negotiation"
+      ],
+      "gaps": [
+        "Role emphasises account renewals, group-wide expansion and strategic enterprise account plans; direct depth not fully evidenced",
+        "No verified API or digital healthcare selling experience",
+        "Less focused on pure new-business AE activity than target"
+      ],
+      "reviewFlag": "Account-management emphasis; assess career direction before shortlisting",
+      "notes": "Credible key-account IC alternative, but not the primary AE target. 5 Nov date corroborated externally. No application authorised."
+    },
+    {
+      "patternDetail": "Employer lists London and on-site; exact attendance pattern to confirm",
+      "industry": "AI / cybersecurity",
+      "dateChecked": "2026-11-16",
+      "contact": "",
+      "followUp": "",
+      "isApplied": false,
+      "isRejected": false,
+      "shortlisted": false,
+      "lastAction": "",
+      "status": "Needs verification",
+      "id": "research-refractal-ae-2026-11",
+      "company": "Refractal",
+      "role": "Account Executive EMEA",
+      "location": "London",
+      "pattern": "Office",
+      "employment": "Full-time; permanent to confirm",
+      "datePosted": "",
+      "url": "https://jobs.ashbyhq.com/refractal/4aa656b0-3e3f-4657-81c5-14edd9117046",
+      "source": "Refractal careers (official)",
+      "sourceQuality": "Employer confirms £70,000–£130,000 base and on-site London full-time, but permanent wording and posting date are not confirmed.",
+      "salaryMin": 70000,
+      "salaryMax": 130000,
+      "salaryText": "Employer advertised base £70,000–£130,000; separate commission",
+      "salaryVerified": true,
+      "fitScore": 76,
+      "strengths": [
+        "Demonstrated consultative full-cycle B2B technology sales",
+        "MEDDIC/MEDDPICC and multi-stakeholder commercial discovery",
+        "ROI business case creation, contract negotiation and forecasting"
+      ],
+      "gaps": [
+        "Employer lists multi-country EMEA sales experience as essential; not verified on CV",
+        "No confirmed cybersecurity domain selling experience",
+        "Permanent contract and posting date need direct employer confirmation"
+      ],
+      "reviewFlag": "Major EMEA requirement gap; contract and posting date unknown",
+      "notes": "Employer-hosted listing open in web results on 16 Nov. Date conflicting/undisclosed; no application authorised."
+    }
+  ]
+}
