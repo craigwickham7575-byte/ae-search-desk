@@ -1,5 +1,10 @@
 name: Refresh AE vacancies
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/refresh_jobs.py'
+      - '.github/workflows/refresh.yml'
   schedule:
     - cron: '30 7 * * 1-5'
   workflow_dispatch: {}
