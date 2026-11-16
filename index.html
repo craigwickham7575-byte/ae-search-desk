@@ -46,7 +46,23 @@ function drawFilters(){const inds=[...new Set(data.jobs.map(j=>j.industry))].sor
 function drawJobs(){let arr=data.jobs.filter(visible);const q=$('searchInput').value.toLowerCase().trim(),sal=$('salaryFilter').value,pattern=$('patternFilter').value,industry=$('industryFilter').value,days=$('dateFilter').value,status=$('statusFilter').value;if(q)arr=arr.filter(x=>[x.company,x.role,x.industry,x.location,x.notes,...(x.strengths||[]),...(x.gaps||[])].join(' ').toLowerCase().includes(q));if(pattern!=='any')arr=arr.filter(x=>x.pattern===pattern);if(industry!=='any')arr=arr.filter(x=>x.industry===industry);if(status!=='any')arr=arr.filter(x=>x.status===status);if(sal==='criteria')arr=arr.filter(eligible);else if(sal!=='any')arr=arr.filter(x=>x.salaryMin!=null&&x.salaryMin>=Number(sal));if(days==='unknown')arr=arr.filter(x=>!x.datePosted);else if(days!=='any')arr=arr.filter(x=>x.datePosted&&((new Date(TODAY)-new Date(x.datePosted))/86400000)<=Number(days));if($('onlyShort').checked)arr=arr.filter(x=>x.shortlisted);if($('onlyVerified').checked)arr=arr.filter(x=>x.salaryVerified);if($('hideNeeds').checked)arr=arr.filter(x=>!verif(x));arr=sorted(arr,$('sortFilter').value);$('resultsCount').textContent=arr.length+' vacancies after filters';$('jobList').innerHTML=arr.length?arr.map((x,i)=>card(x,i)).join(''):'<div class="empty"><b>No vacancies match these filters.</b>Try “Any / verify” salary or reveal unverified vacancies. The app will not relax your salary minimum silently.</div>'}
 function drawShort(){let arr=sorted(data.jobs.filter(x=>visible(x)&&x.shortlisted));$('shortCount').textContent=arr.length+' roles';$('shortList').innerHTML=arr.length?arr.map((x,i)=>card(x,i)).join(''):'<div class="empty"><b>No jobs shortlisted yet</b>Open a vacancy and select “Add to shortlist”.</div>'}
 function drawHistory(){let q=$('historySearch').value.toLowerCase();let arr=data.history.filter(x=>(x.company+' '+x.role+' '+x.contact+' '+x.notes).toLowerCase().includes(q));$('historyCount').textContent=arr.length+' employer records';$('historyRows').innerHTML=arr.map(x=>`<div class="historyrow"><b>${esc(x.company)}</b><div>${esc(x.role||'Role not recorded')}<div class="rowlabel">${esc(x.responseSummary||x.notes).slice(0,140)}</div></div><div class="hide-mobile">${pill(x.status,x.status==='Rejected'?'bad':x.status==='Applied'?'good':'warning')}</div><div class="hide-mobile">${dateFmt(x.followUp)}</div><div><button class="btn small" data-history="${esc(x.id)}">Edit</button></div></div>`).join('')||'<div class="empty">No matching history</div>'}
-function draw(){drawOverview();drawFilters();drawJobs();drawShort();drawHistory();save()}
+function reconcileAppliedJobs(){
+ for(const j of data.jobs){
+  if(j.status!=='Applied'&&!j.isApplied)continue;
+  j.shortlisted=false;
+  j.isApplied=true;
+  j.status='Applied';
+  const key=companyKey(j.company);
+  let h=data.history.find(x=>companyKey(x.company)===key);
+  if(!h){
+   h={id:'history-from-'+j.id,company:j.company,role:j.role,status:'Applied',dateApplied:j.dateApplied||'',contact:j.contact||'',followUp:j.followUp||'',notes:'Application recorded from vacancy tracker. '+(j.notes||''),sourceJobId:j.id,editedAt:j.editedAt||new Date().toISOString()};
+   data.history.push(h);
+  }else if(h.sourceJobId===j.id){
+   if(!h.role)h.role=j.role;
+  }
+ }
+}
+function draw(){reconcileAppliedJobs();drawOverview();drawFilters();drawJobs();drawShort();drawHistory();save()}
 const subtitles={overview:['Your next AE role, organised.','A focused, evidence-led search across industries. Salary means guaranteed base, not OTE.'],opportunities:['Vacancy intelligence.','Every opportunity has a business case for fit, a salary check and a next decision.'],shortlist:['The roles worth your time.','Ranked by transferability and genuine suitability, with no automatic applications.'],history:['A clean application record.','Know who you have contacted, who replied, and where follow-ups stand.'],settings:['Your search rules, safeguarded.','Control the workflow and preserve your job-search records with backups.']};
 function navigate(v){activeView=v;document.querySelectorAll('.view').forEach(n=>n.classList.toggle('active',n.id==='view-'+v));document.querySelectorAll('.nav button').forEach(n=>n.classList.toggle('active',n.dataset.view===v));$('pageTitle').textContent=subtitles[v][0];$('pageSubtitle').textContent=subtitles[v][1];window.scrollTo({top:0,behavior:'instant'})}
 function field(label,name,value='',type='text',wide=false,extra=''){return `<div class="field ${wide?'wide':''}"><label for="f-${name}">${esc(label)}</label><input type="${type}" name="${name}" id="f-${name}" value="${esc(value)}" ${extra}></div>`}
