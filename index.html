@@ -147,11 +147,11 @@ function latestRecord(oldRecord,newRecord){
  return t1>t0?newRecord:oldRecord;
 }
 function mergedWorkspace(cloudData,localData){
- const merged={jobs:[],history:[],updatedAt:TODAY};
+ const merged={jobs:[],history:[],updatedAt:TODAY,deletedHistoryCompanies:[...new Set([...(cloudData?.deletedHistoryCompanies||[]),...(localData?.deletedHistoryCompanies||[])])]};
  const cloudHistory=Array.isArray(cloudData?.history)?cloudData.history:[];
  const localHistory=Array.isArray(localData?.history)?localData.history:[];
  for(const rec of [...cloudHistory,...localHistory]){
-  if(!rec.company)continue;
+  if(!rec.company||merged.deletedHistoryCompanies.some(name=>companyKey(name)===companyKey(rec.company)))continue;
   const idx=merged.history.findIndex(h=>companyKey(h.company)===companyKey(rec.company));
   if(idx<0)merged.history.push(rec);else merged.history[idx]=latestRecord(merged.history[idx],rec);
  }
