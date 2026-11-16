@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "providers": [],
+  "warnings": [
+    "The first scheduled vacancy collection has not run."
+  ],
+  "freshnessDays": 14,
+  "purpose": "Unverified discovery leads only; salary estimates and OTE never count as verified base",
+  "jobs": []
+}
