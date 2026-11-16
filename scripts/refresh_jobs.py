@@ -184,6 +184,29 @@ def adzuna(app_id, app_key):
 
 def main():
     jobs, sources, warnings = [], [], []
+    # Preserve time-limited, individually researched employer leads across API refreshes.
+    # The job status/dateChecked are not silently upgraded by an automated run.
+    curated_path = ROOT / "data" / "researched-leads.json"
+    if curated_path.exists():
+        try:
+            curated = json.loads(curated_path.read_text(encoding="utf-8"))
+            reviewed = [
+                j for j in curated.get("jobs", [])
+                if isinstance(j, dict) and (
+                    recent(j.get("datePosted")) or (
+                        not j.get("datePosted") and recent(j.get("dateChecked"))
+                    )
+                )
+            ]
+            jobs.extend(reviewed)
+            sources.append(f"Previously researched employer leads ({len(reviewed)})")
+            if reviewed:
+                warnings.append(
+                    "Researched employer leads retain their original check dates; "
+                    "they have not been revalidated by today's API refresh"
+                )
+        except (ValueError, OSError) as err:
+            warnings.append(f"Researched-lead import failed: {str(err)[:120]}")
     try:
         found = remotive()
         jobs.extend(found)
