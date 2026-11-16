@@ -1,15 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-16T10:43:38.275Z",
+  "generatedAt": "2026-11-16T10:44:52+00:00",
   "providers": [
-    "Manual employer-page research (3)"
+    "Previously researched employer leads (3)",
+    "Remotive (0)"
   ],
   "warnings": [
-    "These three records were researched individually; future API imports must be checked against employer pages.",
-    "Wider UK listings require Adzuna credentials. No automatic job applications."
+    "Researched employer leads retain their original check dates; they have not been revalidated by today's API refresh",
+    "Adzuna not configured: add GitHub Actions secrets for wider UK coverage"
   ],
   "freshnessDays": 14,
-  "purpose": "Reviewed leads, never automatic application approval; salary checks recorded per vacancy",
+  "purpose": "Unverified leads; OTE and salary estimates never equal verified base",
   "jobs": [
     {
       "patternDetail": "Employer lists UK-only remote work; confirm any attendance expectations",
