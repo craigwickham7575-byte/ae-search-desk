@@ -15,7 +15,7 @@
  <section class="view" id="view-settings"><div class="sectionhead"><div><h2>Search criteria & data</h2><p>Built from your verified Master CV, Career & Job Search Brief (13 Nov) and Master Handover (15 Nov).</p></div></div><div class="split"><div class="panel panelpad"><h3>Non-negotiable criteria</h3><div class="recap"><div><span class="smallcaps">Hybrid / office</span><strong>£60,000+ base</strong><span class="tiny">London / Kent · permanent IC</span></div><div><span class="smallcaps">Fully UK remote</span><strong>£45,000+ base</strong><span class="tiny">Before any commission</span></div></div><div class="divider"></div><h3>Scoring guide</h3><p class="tiny">Fit /100 is a qualitative working estimate using relevant selling experience, seniority, industry transferability, salary/location, and substantial missing requirements. It is never presented as an employer score. Listing freshness and permission to work are separate checks.</p><div class="divider"></div><h3>Current automation boundaries</h3><p class="tiny">Scheduled job feeds add research leads, not submitted applications. Your private application notes currently stay in this browser. Changing a status to Approved for preparation does not directly notify ChatGPT: open the role and use Send preparation request to copy a Project-ready brief. Private cross-device sync requires a separate authenticated service. No applications or recruiter messages are sent by the site.</p></div><div class="panel panelpad"><h3>Restore previous applications and shortlist</h3><p class="tiny">Your previous applications and shortlist are in a separate private JSON backup. Import it here. The dashboard will merge the records with newly discovered vacancies, preserving current notes and decisions on duplicates.</p><div class="actions"><button class="btn primary" id="importHistoryBtn">⇧ Import private backup (merge)</button></div><div class="divider"></div><h3>Private cloud synchronisation</h3>
 <p class="tiny">Sign in with an email link to keep the application history, shortlist and responses in your private Supabase account. Your data will not be uploaded until you choose <b>Enable private sync</b>. Your existing JSON export remains an independent backup.</p>
 <div class="field"><label for="cloudEmail">Email for private sign-in</label><input id="cloudEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
-<div class="actions" style="margin-top:10px"><button class="btn primary" type="button" id="cloudSignIn">✉ Email sign-in link</button><button class="btn" type="button" id="cloudSignOut" style="display:none">Sign out</button></div>
+<div class="actions" style="margin-top:10px"><button class="btn primary" type="button" id="cloudSignIn">✉ Email sign-in link</button><button class="btn" type="button" id="cloudCheckSession">✓ Check existing sign-in (no email)</button><button class="btn" type="button" id="cloudSignOut" style="display:none">Sign out</button></div>
 <p id="cloudStatus" class="tiny" role="status" style="margin-top:10px">Cloud connection inactive. Your browser data remains local.</p>
 <div class="actions" style="margin-top:10px"><button class="btn mint" id="cloudEnable" type="button" disabled>☁ Enable private sync</button><button class="btn" id="cloudSyncNow" type="button" disabled>↻ Sync now</button><button class="btn danger" id="cloudPause" type="button" disabled>Pause cloud sync</button></div>
 <p class="tiny">Cloud sync copies your saved jobs and application history into your account after authentication, then merges newer edits across signed-in devices. Use only on trusted devices. The data is private through database row-level security, not through a private website. Changing to Approved for preparation does not automatically initiate a ChatGPT task.</p>
@@ -185,7 +185,8 @@ async function initPrivateCloud(){
   else cloudMessage('Not signed in. Your application history remains saved only in this browser.');
   cloudClient.auth.onAuthStateChange((event,session)=>{
    cloudUser=session?.user||null;
-   if(!cloudUser){cloudEnabled=false;cloudMessage('Signed out. Browser records remain on this device.');}
+   if(!cloudUser){cloudEnabled=false;cloudMessage('Signed out in this browser. Your applications stay saved locally. Do not reuse old email links.');}
+   else {cloudEnabled=localStorage.getItem(CLOUD_ENABLED_KEY)==='yes';cloudMessage('Signed in as '+cloudUser.email+(cloudEnabled?'. Cloud sync enabled; use Sync now.':'. Select Enable private sync to upload your saved application history.'));}
    cloudControls();
   });
  }catch(err){cloudMessage('Cloud sign-in unavailable: '+(err.message||String(err))+'. Browser records are unaffected.');}
@@ -199,7 +200,19 @@ $('cloudSignIn').onclick=async()=>{
   const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
   if(error)throw error;
   cloudMessage('Check your email for a Supabase sign-in link. After opening it, return here and choose Enable private sync.');
- }catch(err){cloudMessage('Could not send sign-in link: '+(err.message||String(err)));}
+ }catch(err){cloudMessage(/email rate limit exceeded/i.test(err.message||'')?'Supabase email sending limit reached. Do not request more sign-in links yet. Try Check existing sign-in; otherwise wait for the hourly quota to reset, then request only one link. Your local applications and shortlist are safe.':'Could not send sign-in link: '+(err.message||String(err)));}
+};
+$('cloudCheckSession').onclick=async()=>{
+ if(!cloudClient){cloudMessage('Cloud sign-in library is still loading or unavailable.');return;}
+ try{
+  const {data:sessionData,error}=await cloudClient.auth.getSession();
+  if(error)throw error;
+  cloudUser=sessionData.session?.user||null;
+  cloudEnabled=!!cloudUser&&localStorage.getItem(CLOUD_ENABLED_KEY)==='yes';
+  cloudControls();
+  if(cloudUser){cloudMessage('Signed in as '+cloudUser.email+(cloudEnabled?'. Cloud sync is enabled; choose Sync now.':'. Click Enable private sync to upload your saved application records.'));}
+  else cloudMessage('No saved sign-in session in this browser. If you opened the email link in another browser or profile, open the dashboard there. Otherwise wait for Supabase email quota to reset, then request one NEW sign-in link. Your local records remain safe.');
+ }catch(err){cloudMessage('Could not check existing sign-in: '+(err.message||String(err)));}
 };
 $('cloudSignOut').onclick=async()=>{
  clearTimeout(cloudTimer);cloudEnabled=false;localStorage.removeItem(CLOUD_ENABLED_KEY);
