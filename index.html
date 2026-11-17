@@ -47,7 +47,9 @@ const KEY='ae-searchdesk-v1';
 const TODAY=new Date().toISOString().slice(0,10);
 let data, storageWorks=true, activeView='overview', activeEdit=null, modalType='job';
 const $=id=>document.getElementById(id), money=n=>n==null?'Not stated':'£'+Number(n).toLocaleString('en-GB'), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])), dateFmt=s=>s?new Date(s+'T12:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Unconfirmed';
-function load(){try{const saved=localStorage.getItem(KEY);if(saved){const o=JSON.parse(saved);if(Array.isArray(o.jobs)&&Array.isArray(o.history)){data=o;return}}}catch(e){storageWorks=false}data={jobs:SEED_JOBS,history:SEED_HISTORY,updatedAt:TODAY}}
+function load(){try{const saved=localStorage.getItem(KEY);if(saved){const o=JSON.parse(saved);if(Array.isArray(o.jobs)&&Array.isArray(o.history)){
+ if(o.jobs.some(x=>!validJobRecord(x))||o.history.some(x=>!validHistoryRecord(x))){const k=KEY+'-damaged-records-backup';if(!localStorage.getItem(k))localStorage.setItem(k,saved);o.jobs=o.jobs.filter(validJobRecord);o.history=o.history.filter(validHistoryRecord)}
+ data=o;return}}}catch(e){storageWorks=false}data={jobs:SEED_JOBS,history:SEED_HISTORY,updatedAt:TODAY}}
 function save(){data.updatedAt=new Date().toISOString().slice(0,10);try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){storageWorks=false}if($('saveState')) $('saveState').textContent=storageWorks?'Saved in this browser. Also download a JSON backup.':'Local browser storage unavailable: export your JSON backup before closing.';scheduleCloudSave()}
 function companyKey(s){return String(s||'').toLowerCase().replace(/\(.*?\)/g,'').replace(/[^a-z0-9]/g,'').replace(/limited|ltd|recruitment|group|plc/g,'').trim()}
 function excluded(company){const a=companyKey(company);return data.history.some(h=>{const b=companyKey(h.company);return b && a && (a===b || (a.startsWith(b)&&b.length>4) || (b.startsWith(a)&&a.length>4))})}
@@ -316,22 +318,31 @@ function latestRecord(oldRecord,newRecord){
  const t0=Date.parse(oldRecord.editedAt||'')||0,t1=Date.parse(newRecord.editedAt||'')||0;
  return t1>t0?newRecord:oldRecord;
 }
+function validJobRecord(r){return !!(r&&typeof r==='object'&&!Array.isArray(r)&&typeof r.company==='string'&&r.company.trim()&&typeof r.role==='string'&&r.role.trim())}
+function validHistoryRecord(r){return !!(r&&typeof r==='object'&&!Array.isArray(r)&&typeof r.company==='string'&&r.company.trim())}
 function mergedWorkspace(cloudData,localData){
- const merged={jobs:[],history:[],updatedAt:TODAY,deletedHistoryCompanies:[...new Set([...(cloudData?.deletedHistoryCompanies||[]),...(localData?.deletedHistoryCompanies||[])])]};
+ const deleted=[...(Array.isArray(cloudData?.deletedHistoryCompanies)?cloudData.deletedHistoryCompanies:[]),...(Array.isArray(localData?.deletedHistoryCompanies)?localData.deletedHistoryCompanies:[])].filter(x=>typeof x==='string'&&x.trim());
+ const merged={jobs:[],history:[],updatedAt:TODAY,deletedHistoryCompanies:[...new Set(deleted)]};
  const cloudHistory=Array.isArray(cloudData?.history)?cloudData.history:[];
  const localHistory=Array.isArray(localData?.history)?localData.history:[];
  for(const rec of [...cloudHistory,...localHistory]){
-  if(!rec.company||merged.deletedHistoryCompanies.some(name=>companyKey(name)===companyKey(rec.company)))continue;
-  const idx=merged.history.findIndex(h=>companyKey(h.company)===companyKey(rec.company));
-  if(idx<0)merged.history.push(rec);else merged.history[idx]=latestRecord(merged.history[idx],rec);
+  if(!validHistoryRecord(rec)||merged.deletedHistoryCompanies.some(n=>companyKey(n)===companyKey(rec.company)))continue;
+  const i=merged.history.findIndex(h=>companyKey(h.company)===companyKey(rec.company));
+  if(i<0)merged.history.push(rec);else merged.history[i]=latestRecord(merged.history[i],rec);
  }
  const cloudJobs=Array.isArray(cloudData?.jobs)?cloudData.jobs:[];
  const localJobs=Array.isArray(localData?.jobs)?localData.jobs:[];
  for(const rec of [...cloudJobs,...localJobs]){
-  if(!rec.company||!rec.role)continue;
-  const idx=merged.jobs.findIndex(j=>jobMatch(j,rec));
-  if(idx<0)merged.jobs.push(rec);else merged.jobs[idx]=latestRecord(merged.jobs[idx],rec);
+  if(!validJobRecord(rec))continue;
+  const i=merged.jobs.findIndex(j=>jobMatch(j,rec));
+  if(i<0)merged.jobs.push(rec);else merged.jobs[i]=latestRecord(merged.jobs[i],rec);
  }
+ const damagedJobs=cloudJobs.filter(x=>!validJobRecord(x)).length;
+ if(damagedJobs&&merged.jobs.length<cloudJobs.length)
+  throw new Error('Cloud has '+damagedJobs+' damaged vacancy entries. This browser can recover only '+merged.jobs.length+' of '+cloudJobs.length+' vacancies. Upload stopped to protect records. Do not clear browser data; use the original browser or a recent JSON backup.');
+ const damagedHistory=cloudHistory.filter(x=>!validHistoryRecord(x)).length;
+ if(damagedHistory&&merged.history.length<cloudHistory.length)
+  throw new Error('Cloud has '+damagedHistory+' damaged application-history entries. Sync stopped to protect records. Restore from another browser or a JSON backup.');
  return merged;
 }
 async function cloudSynchronize(){
