@@ -57,7 +57,7 @@
  </section>
 
  <section class="view" id="view-interviews">
-  <div class="sectionhead"><div><h2>Interview centre</h2><p>Telephone screenings, video calls and face-to-face interviews. UK local time throughout.</p></div><button type="button" class="btn" data-goto="history">Application history →</button></div>
+  <div class="sectionhead"><div><h2>Interview centre</h2><p>Telephone screenings, video calls and face-to-face interviews. UK local time throughout. Automatic preparation checks run hourly once a date and time are saved and synced.</p></div><button type="button" class="btn" data-goto="history">Application history →</button></div>
   <div class="follow-summary" id="interviewSummary"></div>
   <div class="panel panelpad" style="margin:19px 0 16px">
     <div class="follow-toolbar"><div class="field"><label for="interviewTarget">Book or update an interview</label><select id="interviewTarget"><option value="">Choose an application</option></select></div><div><button type="button" class="btn primary" id="bookInterview">＋ Record interview</button></div></div>
@@ -191,6 +191,12 @@ function interviewCalendarUrl(x){
  const params=[['action','TEMPLATE'],['text',x.company+' - '+(x.interviewStage||'Interview')],['dates',fmt(start)+'/'+fmt(end)],['ctz','Europe/London'],['details',details],['location',x.interviewLocation||'']];
  return 'https://calendar.google.com/calendar/render?'+params.map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
 }
+function interviewPrepFiles(x){
+ const stage=String(x.interviewStage||x.status||'Interview').replace(/[^a-zA-Z0-9]+/g,' ').trim();
+ const prefix='Interview Prep '+x.eventDate+' '+String(x.eventTime||'').replace(':','')+' '+stage+' - ';
+ const target=x.sourceJobId&&data.jobs.some(j=>j.id===x.sourceJobId)?'job:'+x.sourceJobId:'history:'+x.id;
+ return documentRecords.filter(d=>d.job_id===target&&d.original_name.startsWith(prefix));
+}
 function drawInterviews(){
  if(!$('interviewList'))return;
  const items=interviewItems(),active=items.filter(x=>!x.isPast),past=items.filter(x=>x.isPast);
@@ -205,13 +211,15 @@ function drawInterviews(){
  $('interviewResults').textContent=shown.length+' interview records shown';
  $('interviewList').innerHTML=shown.length?shown.map(x=>{
   const cal=interviewCalendarUrl(x),link=safeJobUrl(x.interviewLocation);
+  const prep=interviewPrepFiles(x),pdf=prep.find(d=>/\.pdf$/i.test(d.original_name)),word=prep.find(d=>/\.docx$/i.test(d.original_name));
+  const prepState=!cloudUser?'Sign in to check preparation files':pdf&&word?'Preparation pack ready':documentLoadError?'Could not check preparation files':documentsLoading?'Checking preparation files…':x.isPast?'No complete pack recorded':x.needsTime?'Enter date and time to trigger preparation':'Awaiting automatic preparation';
   const docAttr=x.sourceJobId&&data.jobs.some(j=>j.id===x.sourceJobId)?'data-open-docs="'+esc(x.sourceJobId)+'"':'data-open-docs-history="'+esc(x.id)+'"';
   const label=x.isPast?'Past / completed':x.needsTime?'Date / time needed':x.eventDate===TODAY?'Today':'Booked';
   return `<article class="follow-card"><div class="follow-card-top"><div><h3>${esc(x.company)}</h3><div class="follow-meta">${esc(x.role||'Role not recorded')}</div></div>${pill(label,x.needsTime&&!x.isPast?'warning':x.isPast?'':'good')}</div>
   <div class="interview-date">${x.eventDate?dateFmt(x.eventDate):'Date not set'}${x.eventTime?' · '+esc(x.eventTime):''}</div>
   <div class="interview-event-meta">${esc(x.interviewStage||(x.status==='Screening booked'?'Telephone / recruiter screening':x.status))} · ${esc(x.interviewFormat||'Format not recorded')}${x.interviewDuration?' · '+esc(x.interviewDuration)+' mins':''}</div>
-  <div class="follow-detail"><span class="tag">Interviewer</span><span>${esc(x.interviewPerson||x.contact||'Not recorded')}${x.interviewEmail?' · '+esc(x.interviewEmail):''}</span><span class="tag">Meeting / phone</span><span class="interview-notes">${link?`<a class="joblink" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open meeting ↗</a>`:esc(x.interviewLocation||'Not recorded')}</span><span class="tag">Preparation</span><span class="interview-notes">${esc(x.interviewPrep||'Not recorded')}</span><span class="tag">Outcome / notes</span><span class="interview-notes">${esc(x.interviewOutcome||x.interviewNotes||'Not recorded')}</span></div>
-  <div class="follow-card-actions"><button type="button" class="btn small primary" data-edit-interview="${esc(x.id)}">Update interview</button>${cal&&!x.isPast?`<a class="btn small" href="${esc(cal)}" target="_blank" rel="noopener noreferrer">Add to Google Calendar ↗</a>`:''}<button class="btn small" type="button" ${docAttr}>Documents</button>${link&&!x.isPast?`<a class="btn small" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Join meeting ↗</a>`:''}</div></article>`;
+  <div class="follow-detail"><span class="tag">Interviewer</span><span>${esc(x.interviewPerson||x.contact||'Not recorded')}${x.interviewEmail?' · '+esc(x.interviewEmail):''}</span><span class="tag">Meeting / phone</span><span class="interview-notes">${link?`<a class="joblink" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open meeting ↗</a>`:esc(x.interviewLocation||'Not recorded')}</span><span class="tag">Preparation</span><span class="interview-notes"><b>${esc(prepState)}</b>${x.interviewPrep?' · '+esc(x.interviewPrep):''}</span><span class="tag">Outcome / notes</span><span class="interview-notes">${esc(x.interviewOutcome||x.interviewNotes||'Not recorded')}</span></div>
+  <div class="follow-card-actions"><button type="button" class="btn small primary" data-edit-interview="${esc(x.id)}">Update interview</button>${pdf?`<button type="button" class="btn small primary" data-doc-download="${esc(pdf.id)}">↓ Prep PDF</button>`:''}${word?`<button type="button" class="btn small" data-doc-download="${esc(word.id)}">↓ Prep Word</button>`:''}${cal&&!x.isPast?`<a class="btn small" href="${esc(cal)}" target="_blank" rel="noopener noreferrer">Add to Google Calendar ↗</a>`:''}<button class="btn small" type="button" ${docAttr}>Documents</button>${link&&!x.isPast?`<a class="btn small" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Join meeting ↗</a>`:''}</div></article>`;
  }).join(''):'<div class="panel panelpad">No interviews match this view. Choose an application above to record a booked call.</div>';
 }
 function editInterview(id){
@@ -261,7 +269,7 @@ function reconcileAppliedJobs(){
 
 const DOC_BUCKET='ae-private-documents';
 const DOC_MIMES={pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',doc:'application/msword',txt:'text/plain'};
-let documentRecords=[], documentsLoading=false;
+let documentRecords=[], documentsLoading=false, documentLoadError=false;
 function documentTargets(){
  const a=data.jobs.filter(x=>x.company&&x.role).map(j=>({key:'job:'+j.id,label:j.company+' — '+j.role,company:j.company,role:j.role,status:j.status||''}));
  for(const h of data.history.filter(h=>h.company)){
@@ -313,10 +321,10 @@ async function loadDocuments(){
  try{
   const {data:rows,error}=await cloudClient.from('ae_documents').select('id,user_id,job_id,company,role,doc_type,original_name,storage_path,file_size,mime_type,created_at').order('created_at',{ascending:false}).limit(500);
   if(error)throw error;
-  documentRecords=rows||[];
+  documentRecords=rows||[];documentLoadError=false;
   documentStatus('Private document library ready. '+documentRecords.length+' files secured to your sign-in account. Nothing is posted in the public GitHub repository.');
- }catch(e){documentStatus('Could not load documents: '+(e.message||String(e)));}
- finally{documentsLoading=false;drawDocuments()}
+ }catch(e){documentLoadError=true;documentStatus('Could not load documents: '+(e.message||String(e)));}
+ finally{documentsLoading=false;drawDocuments();if(activeView==='interviews')drawInterviews()}
 }
 async function uploadDocument(){
  if(!cloudClient||!cloudUser){documentStatus('Sign in under Settings & backup before uploading private files.');return;}
@@ -409,7 +417,7 @@ function openDocumentsFor(kind,id){
 
 function draw(){reconcileAppliedJobs();drawOverview();drawFollowUps();drawInterviews();drawFilters();drawJobs();drawShort();drawHistory();drawDocuments();save()}
 const subtitles={overview:['Your next AE role, organised.','A focused, evidence-led search across industries. Salary means guaranteed base, not OTE.'],opportunities:['Vacancy intelligence.','Every opportunity has a business case for fit, a salary check and a next decision.'],shortlist:['The roles worth your time.','Ranked by transferability and genuine suitability, with no automatic applications.'],history:['A clean application record.','Know who you have contacted, who replied, and where follow-ups stand.'],followups:['Follow-ups, without the clutter.','Who to contact, when to reach out and what to do next.'],interviews:['Your interviews, organised.','Screenings, interview appointments, preparation and outcomes in one place.'],documents:['Every application file, in one place.','Private CVs and cover letters linked to each vacancy and employer.'],settings:['Your search rules, safeguarded.','Control the workflow and preserve your job-search records with backups.']};
-function navigate(v){activeView=v;document.querySelectorAll('.view').forEach(n=>n.classList.toggle('active',n.id==='view-'+v));document.querySelectorAll('.nav button').forEach(n=>n.classList.toggle('active',n.dataset.view===v));$('pageTitle').textContent=subtitles[v][0];$('pageSubtitle').textContent=subtitles[v][1];window.scrollTo({top:0,behavior:'instant'});if(v==='documents')loadDocuments()}
+function navigate(v){activeView=v;document.querySelectorAll('.view').forEach(n=>n.classList.toggle('active',n.id==='view-'+v));document.querySelectorAll('.nav button').forEach(n=>n.classList.toggle('active',n.dataset.view===v));$('pageTitle').textContent=subtitles[v][0];$('pageSubtitle').textContent=subtitles[v][1];window.scrollTo({top:0,behavior:'instant'});if(v==='documents'||v==='interviews')loadDocuments()}
 function field(label,name,value='',type='text',wide=false,extra=''){return `<div class="field ${wide?'wide':''}"><label for="f-${name}">${esc(label)}</label><input type="${type}" name="${name}" id="f-${name}" value="${esc(value)}" ${extra}></div>`}
 function choose(label,name,value,opts,wide=false){return `<div class="field ${wide?'wide':''}"><label for="f-${name}">${esc(label)}</label><select name="${name}" id="f-${name}">${opts.map(s=>`<option ${s===value?'selected':''}>${esc(s)}</option>`).join('')}</select></div>`}
 function area(label,name,value,wide=true){return `<div class="field ${wide?'wide':''}"><label for="f-${name}">${esc(label)}</label><textarea name="${name}" id="f-${name}">${esc(value)}</textarea></div>`}
