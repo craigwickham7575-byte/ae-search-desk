@@ -144,8 +144,9 @@ function primaryCompanyRole(group){
   const salaryBelow=j=>j.salaryVerified&&j.salaryMin!=null&&(['Remote','Hybrid','Office'].includes(j.pattern))&&j.salaryMin<(j.pattern==='Remote'?45000:60000);
   const pay=Number(salaryBelow(a))-Number(salaryBelow(b));if(pay)return pay;
   const aFit=Number(a.fitScore)||0,bFit=Number(b.fitScore)||0;
-  if(aFit>=75&&bFit>=75&&Math.abs(aFit-bFit)<=5){const senior=roleLevel(b)-roleLevel(a);if(senior)return senior;}
-  return bFit-aFit||(b.salaryMin||0)-(a.salaryMin||0)||String(a.id).localeCompare(String(b.id));
+  // Match the role to demonstrated suitability, not prestige or higher pay.
+  // The salary floor is still a gate; equal fit is resolved by evidence quality.
+  return bFit-aFit||Number(!!b.salaryVerified)-Number(!!a.salaryVerified)||Number(verif(a))-Number(verif(b))||String(a.id).localeCompare(String(b.id));
  })[0];
 }
 function groupCompanyRoles(roles){
