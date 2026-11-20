@@ -125,12 +125,37 @@ function card(j,i,compact=false){const listing=safeJobUrl(j.url);const sal= j.sa
 function followUpItems(){
  const terminal=new Set(['Rejected','Withdrawn','Hired','Do not show']);
  const records=Array.isArray(data?.history)?data.history:[];
- return records.filter(x=>x&&x.company&&!terminal.has(x.status)&&!interviewBooked(x)).map(x=>{
+ return records.filter(x=>x&&x.company&&!terminal.has(x.status)&&!/^do not chase/i.test(String(x.nextAction||''))&&(!interviewBooked(x)||(x.interviewDate&&x.interviewDate<TODAY))).map(x=>{
   const suggested=!x.followUp&&!!followUpISO(x.dateApplied);
-  const due=x.followUp||followUpISO(x.dateApplied);
-  return {...x,due,suggested};
+  const needsOutcome=interviewBooked(x)&&x.interviewDate&&x.interviewDate<TODAY;const due=x.followUp||followUpISO(x.dateApplied)||(needsOutcome?x.interviewDate:'');
+  return {...x,due,suggested,needsOutcome};
  }).sort((a,b)=>(a.due||'9999-99-99').localeCompare(b.due||'9999-99-99')||String(a.company).localeCompare(String(b.company)));
 }
+
+function currentFollowUpPlan(x){
+ const p=x.followUpPlan;
+ if(!p||typeof p!=='object'||p.forStatus!==x.status||String(p.forDue||'')!==String(x.due||'')||String(p.forResponseAt||'')!==String(x.lastResponseAt||'')||String(p.forLastSentAt||'')!==String(x.lastFollowUpAt||''))return null;
+ return p;
+}
+function outreachTarget(p){
+ try{const u=new URL(p.targetUrl||'');if(u.protocol!=='https:')return '';if(p.channel==='Email'&&u.hostname==='mail.google.com')return u.href;if(p.channel==='LinkedIn'&&(u.hostname==='linkedin.com'||u.hostname.endsWith('.linkedin.com'))&&u.pathname.startsWith('/in/'))return u.href;}catch(_){}
+ return '';
+}
+function outreachCard(x){
+ const p=currentFollowUpPlan(x);
+ if(!p)return '<div class="tiny" style="margin:10px 0">Follow-up research / draft not yet prepared for this step.</div>';
+ const url=outreachTarget(p),source=safeJobUrl(p.evidenceUrl),ready=!!p.body&&!!url&&p.ready===true;
+ return '<div style="padding:12px;border:1px solid var(--hair);border-radius:10px;margin:12px 0"><b>'+esc(ready?'Suggested outreach · review before sending':'Research / action required')+'</b><div class="tiny" style="margin-top:4px">'+esc(p.recipient||'Contact not confirmed')+' · '+esc(p.channel||'Channel to confirm')+'</div><p style="margin:6px 0">'+esc(p.recommendation||'')+'</p><div class="tiny">'+esc(p.evidence||'')+(source?' · <a href="'+esc(source)+'" target="_blank" rel="noopener noreferrer">Evidence ↗</a>':'')+'</div>'+(p.body?'<details style="margin-top:10px" '+(ready&&x.due<=TODAY?'open':'')+'><summary style="cursor:pointer;font-weight:600">Read suggested '+esc(p.channel==='Email'?'email':'message')+'</summary>'+(p.subject?'<p><b>Subject:</b> '+esc(p.subject)+'</p>':'')+'<div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px">'+esc(p.body)+'</div></details>':'')+(ready?'<div class="actions" style="flex-wrap:wrap;margin-top:10px"><button class="btn small" type="button" data-copy-followup="'+esc(x.id)+'">Copy message</button><a class="btn small primary" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+(p.channel==='Email'?'Open email thread':'Open LinkedIn contact')+' ↗</a><button class="btn small" type="button" data-mark-followup="'+esc(x.id)+'">Mark sent</button></div>':'')+'</div>';
+}
+function nextWorkingDay(date,n){const d=new Date(date+'T12:00:00Z');if(Number.isNaN(d.getTime()))return '';while(n>0){d.setUTCDate(d.getUTCDate()+1);if(d.getUTCDay()!==0&&d.getUTCDay()!==6)n--;}return d.toISOString().slice(0,10)}
+async function copyFollowup(id){const x=followUpItems().find(h=>h.id===id),p=x&&currentFollowUpPlan(x);if(!p?.body)return;try{await navigator.clipboard.writeText(p.body);alert('Message copied. Review before sending.')}catch(_){alert('Could not copy automatically. Select the message text and copy it manually.');}}
+function markFollowup(id){
+ const x=followUpItems().find(h=>h.id===id),p=x&&currentFollowUpPlan(x),h=data.history.find(h=>h.id===id);if(!p?.ready||!h)return;
+ if(!confirm('Confirm you have actually sent this follow-up. No message will be sent by the dashboard.'))return;
+ h.lastFollowUpAt=new Date().toISOString();h.lastFollowUpMessage=p.body;h.followUpCount=(Number(h.followUpCount)||0)+1;h.followUp=nextWorkingDay(TODAY,5);
+ h.nextAction=h.followUpCount>=2?'Review manually before any further chase.':'Check for a reply before the next follow-up.';h.editedAt=h.lastFollowUpAt;draw();
+}
+
 function drawFollowUps(){
  if(!$('followList'))return;
  const items=followUpItems(),weekEnd=followUpISO(TODAY,7);
@@ -162,6 +187,7 @@ function drawFollowUps(){
       <span class="tag">Contact</span><span>${esc(x.contact||'Not verified')}${x.contactEmail?' · '+esc(x.contactEmail):''}</span>
       <span class="tag">Next action</span><span>${esc(x.nextAction||'Review application and decide on a follow-up action')}</span>
     </div>
+    ${x.needsOutcome?'<div class="tiny" style="margin:10px 0">Past interview: record outcome before any outreach.</div>':outreachCard(x)}
     <div class="follow-card-actions">
       <button type="button" class="btn small primary" data-history="${esc(x.id)}">Update follow-up</button>
       ${url?`<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">View job ↗</a>`:''}
@@ -687,6 +713,8 @@ $('docUploadBtn').onclick=uploadDocument;
 $('docRefreshBtn').onclick=loadDocuments;
 $('docFilter').onchange=renderDocumentList;
 document.addEventListener('click',e=>{
+ const copyFollow=e.target.closest('[data-copy-followup]');if(copyFollow){copyFollowup(copyFollow.dataset.copyFollowup);return;}
+ const markFollow=e.target.closest('[data-mark-followup]');if(markFollow){markFollowup(markFollow.dataset.markFollowup);return;}
  const printPrep=e.target.closest('[data-prep-print]');if(printPrep){exportSavedPrep(printPrep.dataset.prepPrint,'pdf');return;}
  const wordPrep=e.target.closest('[data-prep-word]');if(wordPrep){exportSavedPrep(wordPrep.dataset.prepWord,'word');return;}
  const down=e.target.closest('[data-doc-download]');
