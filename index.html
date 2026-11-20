@@ -493,11 +493,11 @@ function drawDocuments(){
  renderDocumentList();
 }
 function documentNeedsReview(f){
- if(!f||!f.created_at||!String(f.created_at).startsWith('2026-11-20'))return false;
+ if(!f||!['CV','Cover letter'].includes(f.doc_type))return false;
  const size=Number(f.file_size||0),name=String(f.original_name||'').toLowerCase();
- const employers=['engagetech','tracksuit','bamboohr','flourish','quanta'];
- if(!employers.some(n=>String(f.company||'').toLowerCase().includes(n)))return false;
- return (name.endsWith('.pdf')&&size>0&&size<6500)||(name.endsWith('.docx')&&size>0&&size<8000);
+ // A small file is only a review trigger, not proof that an ATS rejects it.
+ // Earlier automated CVs and letters included short PDF/DOCX packages.
+ return (name.endsWith('.pdf')&&size>0&&size<12000)||(name.endsWith('.docx')&&size>0&&size<16000);
 }
 
 function renderDocumentList(){
@@ -508,7 +508,7 @@ function renderDocumentList(){
  $('docsCount').textContent=documentRecords.length+' '+(documentRecords.length===1?'file':'files');
  if(!cloudUser||!cloudClient){$('docList').innerHTML='<div class="panel panelpad tiny">Sign in to Supabase using Settings & backup to access your private documents.</div>';return;}
  if(!docs.length){$('docList').innerHTML='<div class="panel panelpad tiny">No uploaded documents'+(picked?' for this application':' yet')+'. Choose a vacancy above and save your CV or cover letter here.</div>';return;}
- if(suspect.length)documentStatus(suspect.length+' earlier generated file(s) require quality review. Original copies remain available for audit; do not use them for fresh applications.');
+ if(suspect.length)documentStatus(suspect.length+' small CV/cover-letter file(s) require quality review. Original copies remain available for audit; do not use them for fresh applications.');
  const group=new Map();
  for(const file of docs){if(!group.has(file.job_id))group.set(file.job_id,[]);group.get(file.job_id).push(file)}
  const targets=documentTargets();
@@ -519,7 +519,7 @@ function renderDocumentList(){
    const caution=documentNeedsReview(f);
    const dt=new Date(f.created_at);
    const date=Number.isNaN(dt.valueOf())?'':dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-   return '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--hair);align-items:center"><div><strong>'+esc(f.original_name)+'</strong><div class="tiny">'+esc(f.doc_type)+' · '+date+' · '+(Number(f.file_size||0)/1024).toFixed(0)+' KB</div>'+(caution?'<div class="tiny" style="color:#9b4346;font-weight:700;margin-top:5px">⚠ Quality review required: earlier automatically generated file may be incomplete. Do not submit without checking or replacing.</div>':'')+'</div><div class="actions"><button class="btn small" type="button" data-doc-view="'+esc(f.id)+'">◉ View</button><button class="btn small primary" type="button" data-doc-download="'+esc(f.id)+'">↓ Download</button><button class="btn small" type="button" data-doc-remove="'+esc(f.id)+'">Remove</button></div></div>';
+   return '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--hair);align-items:center"><div><strong>'+esc(f.original_name)+'</strong><div class="tiny">'+esc(f.doc_type)+' · '+date+' · '+(Number(f.file_size||0)/1024).toFixed(0)+' KB</div>'+(caution?'<div class="tiny" style="color:#9b4346;font-weight:700;margin-top:5px">⚠ Quality review required: small document may be incomplete. Do not submit without checking or replacing.</div>':'')+'</div><div class="actions"><button class="btn small" type="button" data-doc-view="'+esc(f.id)+'">◉ View</button><button class="btn small primary" type="button" data-doc-download="'+esc(f.id)+'">↓ Download</button><button class="btn small" type="button" data-doc-remove="'+esc(f.id)+'">Remove</button></div></div>';
   }).join('');
   return '<div class="panel panelpad" style="margin-bottom:12px"><h3>'+esc(label)+'</h3>'+rows+'</div>';
  }).join('');
@@ -656,7 +656,7 @@ async function viewDocument(id){
  const modal=$('documentPreviewBack');modal.hidden=false;
  $('documentPreviewTitle').textContent=f.original_name;
  $('documentPreviewFrame').hidden=true;$('documentPreviewText').hidden=true;$('documentPreviewEmpty').hidden=true;
- displayDocumentPreview(documentNeedsReview(f)?'⚠ This older automatically generated document may be incomplete. Preview for review only; do not use for an application.':'Loading the private file…',documentNeedsReview(f)?'warning':'info');
+ displayDocumentPreview(documentNeedsReview(f)?'⚠ This small document may be incomplete. Preview for review only; do not use for an application.':'Loading the private file…',documentNeedsReview(f)?'warning':'info');
  $('closeDocumentPreview').focus();
  const request=++documentPreviewRequest;
  try{
@@ -693,7 +693,7 @@ async function downloadDocument(id){
  if(!cloudClient||!cloudUser){documentStatus('Sign in before downloading documents.');return;}
  const f=documentRecords.find(x=>x.id===id);
  if(!f)return;
- if(documentNeedsReview(f)&&!confirm('QUALITY WARNING: This older automatically generated file may be incomplete and should not be submitted. Download for review or comparison only?'))return;
+ if(documentNeedsReview(f)&&!confirm('QUALITY WARNING: This small document may be incomplete and should not be submitted. Download for review or comparison only?'))return;
  try{
   // Agent-generated documents can be stored privately in the database when a storage file upload is unavailable.
   const {data:embedded,error:queryError}=await cloudClient.from('ae_documents').select('content_base64').eq('id',id).maybeSingle();
