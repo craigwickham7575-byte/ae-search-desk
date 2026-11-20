@@ -60,6 +60,19 @@
 .excluded-vacancy-row .btn{flex-shrink:0}
 .excluded-vacancy-row b{font-weight:750}
 
+
+.document-preview-back:not([hidden]){position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(10,21,37,.83);z-index:100}
+.document-preview-back[hidden]{display:none}
+.document-preview-panel{width:min(1100px,100%);height:min(94vh,1050px);height:min(94dvh,1050px);min-width:0;background:white;border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.3)}
+.document-preview-head{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 20px;border-bottom:1px solid var(--hair)}
+.document-preview-head .btn{flex-shrink:0}
+.document-preview-note{font-size:12px;line-height:1.45;padding:10px 20px;color:var(--ink);background:#eff5fa;border-bottom:1px solid var(--hair)}
+.document-preview-note.is-warning{background:#fff4e1;color:#774810}
+.document-preview-content{flex:1;min-height:0;display:flex;flex-direction:column}
+.document-preview-content iframe{width:100%;height:100%;min-height:0;border:0;background:#fff}
+.document-preview-content pre{flex:1;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 Arial,sans-serif;margin:0;padding:24px;color:#192b3e;background:#fff}
+.document-preview-content .empty{flex:1}
+@media(max-width:730px){.document-preview-back:not([hidden]){padding:0}.document-preview-panel{height:100vh;height:100dvh;border-radius:0}.document-preview-head{padding:12px}.document-preview-note{padding:10px 12px}.document-preview-content pre{padding:15px}}
 </style></head>
 <body><div class="app"><aside class="sidebar"><div class="logo"><div class="mark">AE</div><div><b>Search Desk</b><small>Career command centre</small></div></div><nav class="nav" id="nav"><button data-view="overview" class="active">▦ &nbsp; Overview</button><button data-view="opportunities">▤ &nbsp; Vacancies</button><button data-view="shortlist">☆ &nbsp; Shortlist</button><button data-view="history">◷ &nbsp; Application history</button><button data-view="followups">◴ &nbsp; Follow-ups</button><button data-view="interviews">▣ &nbsp; Interviews</button><button data-view="documents">▣ &nbsp; Documents</button><button data-view="settings">⚙ &nbsp; Settings & backup</button></nav><div class="sidebar-bottom"><strong>Approval-first workflow</strong><span>Automatic top-three shortlist → review → approve preparation → manually apply. No automated submissions or recruiter contact.</span></div></aside>
 <main class="main">
@@ -125,6 +138,22 @@
  <div class="foot">Private AE search desk · Published feed updates when scheduled job collection succeeds · New API leads are unverified · Your notes and statuses remain saved in this browser · Export backups regularly</div>
 </main></div>
 <div class="detailback" id="detailBack"><div class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle"><div class="drawerhead"><button class="close" id="closeDrawer" aria-label="Close">✕</button><button class="btn small" type="button" id="backDrawerBtn" style="margin-bottom:10px">← Back</button><div class="eyebrow" id="drawerEyebrow">VACANCY DETAIL</div><h2 id="drawerTitle" style="margin-top:6px">Vacancy details</h2><div class="tiny" id="drawerSub"></div></div><div class="drawerbody" id="drawerBody"></div></div></div>
+
+<div id="documentPreviewBack" class="document-preview-back" hidden role="dialog" aria-modal="true" aria-labelledby="documentPreviewTitle">
+ <div class="document-preview-panel">
+  <div class="document-preview-head">
+   <div style="min-width:0"><div class="eyebrow">PRIVATE DOCUMENT PREVIEW</div><h2 id="documentPreviewTitle" style="margin:2px 0 0;font-size:17px;overflow-wrap:anywhere">Document</h2></div>
+   <button type="button" class="btn small" id="closeDocumentPreview" aria-label="Close document preview">✕ Close</button>
+  </div>
+  <div class="document-preview-note" id="documentPreviewNotice" role="status">Loading private document…</div>
+  <div class="document-preview-content">
+   <iframe id="documentPreviewFrame" title="PDF document preview" referrerpolicy="no-referrer" hidden></iframe>
+   <pre id="documentPreviewText" hidden></pre>
+   <div id="documentPreviewEmpty" class="empty" hidden></div>
+  </div>
+ </div>
+</div>
+
 <script>
 const SEED_JOBS=[];
 const SEED_HISTORY=[];
@@ -490,7 +519,7 @@ function renderDocumentList(){
    const caution=documentNeedsReview(f);
    const dt=new Date(f.created_at);
    const date=Number.isNaN(dt.valueOf())?'':dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-   return '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--hair);align-items:center"><div><strong>'+esc(f.original_name)+'</strong><div class="tiny">'+esc(f.doc_type)+' · '+date+' · '+(Number(f.file_size||0)/1024).toFixed(0)+' KB</div>'+(caution?'<div class="tiny" style="color:#9b4346;font-weight:700;margin-top:5px">⚠ Quality review required: earlier automatically generated file may be incomplete. Do not submit without checking or replacing.</div>':'')+'</div><div class="actions"><button class="btn small primary" type="button" data-doc-download="'+esc(f.id)+'">↓ Download</button><button class="btn small" type="button" data-doc-remove="'+esc(f.id)+'">Remove</button></div></div>';
+   return '<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--hair);align-items:center"><div><strong>'+esc(f.original_name)+'</strong><div class="tiny">'+esc(f.doc_type)+' · '+date+' · '+(Number(f.file_size||0)/1024).toFixed(0)+' KB</div>'+(caution?'<div class="tiny" style="color:#9b4346;font-weight:700;margin-top:5px">⚠ Quality review required: earlier automatically generated file may be incomplete. Do not submit without checking or replacing.</div>':'')+'</div><div class="actions"><button class="btn small" type="button" data-doc-view="'+esc(f.id)+'">◉ View</button><button class="btn small primary" type="button" data-doc-download="'+esc(f.id)+'">↓ Download</button><button class="btn small" type="button" data-doc-remove="'+esc(f.id)+'">Remove</button></div></div>';
   }).join('');
   return '<div class="panel panelpad" style="margin-bottom:12px"><h3>'+esc(label)+'</h3>'+rows+'</div>';
  }).join('');
@@ -549,6 +578,117 @@ async function uploadDocument(){
   documentStatus('Upload failed: '+(e.message||String(e))+' — the file was not added to the library.');
  }finally{btn.disabled=false}
 }
+
+let documentPreviewUrl=null,documentPreviewRequest=0,documentPreviewReturnFocus=null;
+function closeDocumentPreview(){
+ const modal=$('documentPreviewBack');
+ if(!modal||modal.hidden)return;
+ documentPreviewRequest++;
+ $('documentPreviewFrame').removeAttribute('src');
+ $('documentPreviewText').textContent='';
+ $('documentPreviewEmpty').textContent='';
+ modal.hidden=true;
+ if(documentPreviewUrl){URL.revokeObjectURL(documentPreviewUrl);documentPreviewUrl=null;}
+ if(documentPreviewReturnFocus&&documentPreviewReturnFocus.isConnected)documentPreviewReturnFocus.focus();
+ documentPreviewReturnFocus=null;
+}
+function displayDocumentPreview(message,type='info'){
+ const note=$('documentPreviewNotice');
+ note.textContent=message;note.classList.toggle('is-warning',type==='warning');
+}
+async function secureDocumentBlob(f){
+ const {data:embedded,error}=await cloudClient.from('ae_documents').select('content_base64').eq('id',f.id).eq('user_id',cloudUser.id).maybeSingle();
+ if(error)throw error;
+ if(embedded?.content_base64){
+  const binary=atob(embedded.content_base64),bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:f.mime_type||'application/octet-stream'});
+ }
+ if(!f.storage_path)throw new Error('No private file content found');
+ const r=await cloudClient.storage.from(DOC_BUCKET).download(f.storage_path);
+ if(r.error)throw r.error;
+ if(!r.data)throw new Error('No private file content returned');
+ return r.data;
+}
+async function docxPlainText(blob){
+ const bytes=new Uint8Array(await blob.arrayBuffer());
+ const dv=new DataView(bytes.buffer);
+ let eocd=-1;
+ for(let p=bytes.length-22;p>=Math.max(0,bytes.length-65557);p--){
+  if(dv.getUint32(p,true)===0x06054b50){eocd=p;break;}
+ }
+ if(eocd<0)throw new Error('Word file is not a valid ZIP');
+ let count=dv.getUint16(eocd+10,true),pos=dv.getUint32(eocd+16,true);
+ if(count>10000)throw new Error('Word archive contains too many entries');
+ let entry=null;
+ for(let i=0;i<count;i++){
+  if(pos+46>bytes.length||dv.getUint32(pos,true)!==0x02014b50)throw new Error('Word archive directory invalid');
+  const method=dv.getUint16(pos+10,true),compSize=dv.getUint32(pos+20,true);
+  const nameSize=dv.getUint16(pos+28,true),extra=dv.getUint16(pos+30,true),comment=dv.getUint16(pos+32,true);
+  const local=dv.getUint32(pos+42,true),name=new TextDecoder().decode(bytes.subarray(pos+46,pos+46+nameSize));
+  if(name==='word/document.xml'){entry={method,compSize,local};break;}
+  pos+=46+nameSize+extra+comment;
+ }
+ if(!entry)throw new Error('No Word document text found');
+ const p=entry.local;
+ if(p+30>bytes.length||dv.getUint32(p,true)!==0x04034b50)throw new Error('Word file local entry invalid');
+ const off=p+30+dv.getUint16(p+26,true)+dv.getUint16(p+28,true);
+ if(off+entry.compSize>bytes.length)throw new Error('Truncated Word document');
+ const part=bytes.slice(off,off+entry.compSize);
+ let xmlBytes;
+ if(entry.method===0)xmlBytes=part;
+ else if(entry.method===8){
+  if(typeof DecompressionStream==='undefined')throw new Error('Word preview needs a newer browser. You can still download the file');
+  const stream=new Blob([part]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  xmlBytes=new Uint8Array(await new Response(stream).arrayBuffer());
+ }else throw new Error('Word compression not supported in preview');
+ if(xmlBytes.length>3000000)throw new Error('Word preview is too large');
+ const doc=new DOMParser().parseFromString(new TextDecoder().decode(xmlBytes),'application/xml');
+ if(doc.querySelector('parsererror'))throw new Error('Could not read Word text');
+ const paragraphs=Array.from(doc.getElementsByTagName('w:p'));
+ const chunks=paragraphs.map(p=>Array.from(p.getElementsByTagName('*')).filter(n=>['w:t','w:tab','w:br','w:cr'].includes(n.nodeName)).map(n=>n.nodeName==='w:t'?n.textContent:n.nodeName==='w:tab'?'\t':'\n').join(''));
+ return chunks.join('\n').replace(/\n{4,}/g,'\n\n\n').trim();
+}
+async function viewDocument(id){
+ if(!cloudClient||!cloudUser){documentStatus('Please sign in before viewing your private documents.');return;}
+ const f=documentRecords.find(x=>x.id===id);if(!f)return;
+ closeDocumentPreview();documentPreviewReturnFocus=document.activeElement;
+ const modal=$('documentPreviewBack');modal.hidden=false;
+ $('documentPreviewTitle').textContent=f.original_name;
+ $('documentPreviewFrame').hidden=true;$('documentPreviewText').hidden=true;$('documentPreviewEmpty').hidden=true;
+ displayDocumentPreview(documentNeedsReview(f)?'⚠ This older automatically generated document may be incomplete. Preview for review only; do not use for an application.':'Loading the private file…',documentNeedsReview(f)?'warning':'info');
+ $('closeDocumentPreview').focus();
+ const request=++documentPreviewRequest;
+ try{
+  const ext=String(f.original_name||'').toLowerCase().split('.').pop(),blob=await secureDocumentBlob(f);
+  if(request!==documentPreviewRequest)return;
+  if(ext==='pdf'||f.mime_type==='application/pdf'){
+   documentPreviewUrl=URL.createObjectURL(new Blob([blob],{type:'application/pdf'}));
+   $('documentPreviewFrame').src=documentPreviewUrl;$('documentPreviewFrame').hidden=false;
+   if(!documentNeedsReview(f))displayDocumentPreview('PDF preview · Check the full document before submitting. Some browser PDF viewers may show their own download control.');
+  }else if(ext==='docx'){
+   const plain=await docxPlainText(blob);if(request!==documentPreviewRequest)return;
+   $('documentPreviewText').textContent=plain||'This Word file contains no readable paragraph text';
+   $('documentPreviewText').hidden=false;
+   displayDocumentPreview((documentNeedsReview(f)?'⚠ Quality warning. ':'')+'Word text-only preview. Formatting and page layout cannot be verified here; use the PDF version or open the Word download to check appearance.',documentNeedsReview(f)?'warning':'info');
+  }else if(ext==='txt'){
+   $('documentPreviewText').textContent=await blob.text();if(request!==documentPreviewRequest)return;
+   $('documentPreviewText').hidden=false;
+   if(!documentNeedsReview(f))displayDocumentPreview('Plain text preview.');
+  }else{
+   const sibling=documentRecords.find(x=>x.job_id===f.job_id&&x.doc_type===f.doc_type&&String(x.original_name).toLowerCase().endsWith('.pdf'));
+   $('documentPreviewEmpty').textContent='This file format does not have a built-in preview.'+(sibling?' A matching PDF is available in the document list.':' Please use Download and open it in the appropriate application.');
+   $('documentPreviewEmpty').hidden=false;
+   if(!documentNeedsReview(f))displayDocumentPreview('Preview not available for this legacy file format.');
+  }
+ }catch(e){
+  if(request!==documentPreviewRequest)return;
+  $('documentPreviewEmpty').textContent='Could not preview this file: '+(e.message||String(e))+'. You can still download it.';
+  $('documentPreviewEmpty').hidden=false;
+  displayDocumentPreview('Preview unavailable','warning');
+ }
+}
+
 async function downloadDocument(id){
  if(!cloudClient||!cloudUser){documentStatus('Sign in before downloading documents.');return;}
  const f=documentRecords.find(x=>x.id===id);
@@ -919,6 +1059,7 @@ document.addEventListener('click',e=>{
  const markFollow=e.target.closest('[data-mark-followup]');if(markFollow){markFollowup(markFollow.dataset.markFollowup);return;}
  const printPrep=e.target.closest('[data-prep-print]');if(printPrep){exportSavedPrep(printPrep.dataset.prepPrint,'pdf');return;}
  const wordPrep=e.target.closest('[data-prep-word]');if(wordPrep){exportSavedPrep(wordPrep.dataset.prepWord,'word');return;}
+ const preview=e.target.closest('[data-doc-view]');if(preview){viewDocument(preview.dataset.docView);return;}
  const down=e.target.closest('[data-doc-download]');
  if(down){downloadDocument(down.dataset.docDownload);return;}
  const rem=e.target.closest('[data-doc-remove]');
@@ -928,5 +1069,5 @@ document.addEventListener('click',e=>{
  const history=e.target.closest('[data-open-docs-history]');
  if(history){openDocumentsFor('history',history.dataset.openDocsHistory);}
 });
-load();document.querySelectorAll('.nav button').forEach(n=>n.onclick=()=>navigate(n.dataset.view));document.addEventListener('click',e=>{const b=e.target.closest('[data-open]')||(!e.target.closest('a,button,input,select,textarea')?e.target.closest('.job')?.querySelector('[data-open]'):null);if(b){try{openJob(b.dataset.open)}catch(err){console.error('Unable to open vacancy',err);alert('Could not open vacancy details. Please refresh the page and try again. Error: '+err.message)}return}const m=e.target.closest('[data-metric]');if(m){const n=Number(m.dataset.metric);if(n===2){navigate('shortlist');return}if(n===4){navigate('followups');return}if(n===5){navigate('interviews');return}['searchInput','salaryFilter','patternFilter','industryFilter','dateFilter','statusFilter'].forEach(id=>{const el=$(id);if(el)el.value='any'});$('searchInput').value='';$('onlyShort').checked=false;$('onlyVerified').checked=false;$('hideNeeds').checked=false;if(n===1)$('salaryFilter').value='criteria';if(n===3){$('statusFilter').value='any';$('hideNeeds').checked=false;drawJobs();$('jobList').innerHTML=sorted(groupCompanyRoles(data.jobs.filter(j=>visible(j)&&verif(j)))).map((j,i)=>card(j,i)).join('')||'<div class="empty">No vacancies currently need verification.</div>';$('resultsCount').textContent=groupCompanyRoles(data.jobs.filter(j=>visible(j)&&verif(j))).length+' employers requiring checks';navigate('opportunities');return}drawJobs();navigate('opportunities');return}const iv=e.target.closest('[data-edit-interview]');if(iv){editInterview(iv.dataset.editInterview);return}const h=e.target.closest('[data-history]');if(h){openHistory(h.dataset.history);return}const v=e.target.closest('[data-goto]');if(v)navigate(v.dataset.goto)});$('addBtn').onclick=()=>openJob();$('addHistoryBtn').onclick=()=>openHistory();$('closeDrawer').onclick=closeModal;$('backDrawerBtn').onclick=closeModal;$('backPageBtn').onclick=goBackPage;$('detailBack').onclick=e=>{if(e.target===$('detailBack'))closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});['searchInput','salaryFilter','patternFilter','industryFilter','dateFilter','statusFilter','onlyShort','onlyVerified','hideNeeds','sortFilter'].forEach(id=>$(id).addEventListener('input',drawJobs));$('resetFilters').onclick=()=>{$('searchInput').value='';$('salaryFilter').value='any';$('patternFilter').value='any';$('industryFilter').value='any';$('dateFilter').value='any';$('statusFilter').value='any';$('onlyShort').checked=false;$('onlyVerified').checked=false;$('hideNeeds').checked=false;$('sortFilter').value='fit';drawJobs()};$('historySearch').oninput=drawHistory;$('followFilter').onchange=drawFollowUps;$('followSearch').oninput=drawFollowUps;$('interviewFilter').onchange=drawInterviews;$('interviewSearch').oninput=drawInterviews;$('bookInterview').onclick=()=>{const id=$('interviewTarget').value;if(!id){alert('Choose an application first.');return;}editInterview(id)};$('exportBtn').onclick=exportJson;$('exportJson').onclick=exportJson;$('exportCsv').onclick=exportCsv;$('syncFeedBtn').onclick=syncPublishedFeed;$('importJson').onclick=()=>$('fileInput').click();$('importHistoryBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{importFile(e.target.files[0]);e.target.value=''};draw();syncPublishedFeed();initPrivateCloud();
+load();document.querySelectorAll('.nav button').forEach(n=>n.onclick=()=>navigate(n.dataset.view));document.addEventListener('click',e=>{const b=e.target.closest('[data-open]')||(!e.target.closest('a,button,input,select,textarea')?e.target.closest('.job')?.querySelector('[data-open]'):null);if(b){try{openJob(b.dataset.open)}catch(err){console.error('Unable to open vacancy',err);alert('Could not open vacancy details. Please refresh the page and try again. Error: '+err.message)}return}const m=e.target.closest('[data-metric]');if(m){const n=Number(m.dataset.metric);if(n===2){navigate('shortlist');return}if(n===4){navigate('followups');return}if(n===5){navigate('interviews');return}['searchInput','salaryFilter','patternFilter','industryFilter','dateFilter','statusFilter'].forEach(id=>{const el=$(id);if(el)el.value='any'});$('searchInput').value='';$('onlyShort').checked=false;$('onlyVerified').checked=false;$('hideNeeds').checked=false;if(n===1)$('salaryFilter').value='criteria';if(n===3){$('statusFilter').value='any';$('hideNeeds').checked=false;drawJobs();$('jobList').innerHTML=sorted(groupCompanyRoles(data.jobs.filter(j=>visible(j)&&verif(j)))).map((j,i)=>card(j,i)).join('')||'<div class="empty">No vacancies currently need verification.</div>';$('resultsCount').textContent=groupCompanyRoles(data.jobs.filter(j=>visible(j)&&verif(j))).length+' employers requiring checks';navigate('opportunities');return}drawJobs();navigate('opportunities');return}const iv=e.target.closest('[data-edit-interview]');if(iv){editInterview(iv.dataset.editInterview);return}const h=e.target.closest('[data-history]');if(h){openHistory(h.dataset.history);return}const v=e.target.closest('[data-goto]');if(v)navigate(v.dataset.goto)});$('addBtn').onclick=()=>openJob();$('addHistoryBtn').onclick=()=>openHistory();$('closeDocumentPreview').onclick=closeDocumentPreview;$('documentPreviewBack').onclick=e=>{if(e.target===$('documentPreviewBack'))closeDocumentPreview();};$('closeDrawer').onclick=closeModal;$('backDrawerBtn').onclick=closeModal;$('backPageBtn').onclick=goBackPage;$('detailBack').onclick=e=>{if(e.target===$('detailBack'))closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('documentPreviewBack').hidden)closeDocumentPreview();else closeModal();}});['searchInput','salaryFilter','patternFilter','industryFilter','dateFilter','statusFilter','onlyShort','onlyVerified','hideNeeds','sortFilter'].forEach(id=>$(id).addEventListener('input',drawJobs));$('resetFilters').onclick=()=>{$('searchInput').value='';$('salaryFilter').value='any';$('patternFilter').value='any';$('industryFilter').value='any';$('dateFilter').value='any';$('statusFilter').value='any';$('onlyShort').checked=false;$('onlyVerified').checked=false;$('hideNeeds').checked=false;$('sortFilter').value='fit';drawJobs()};$('historySearch').oninput=drawHistory;$('followFilter').onchange=drawFollowUps;$('followSearch').oninput=drawFollowUps;$('interviewFilter').onchange=drawInterviews;$('interviewSearch').oninput=drawInterviews;$('bookInterview').onclick=()=>{const id=$('interviewTarget').value;if(!id){alert('Choose an application first.');return;}editInterview(id)};$('exportBtn').onclick=exportJson;$('exportJson').onclick=exportJson;$('exportCsv').onclick=exportCsv;$('syncFeedBtn').onclick=syncPublishedFeed;$('importJson').onclick=()=>$('fileInput').click();$('importHistoryBtn').onclick=()=>$('fileInput').click();$('fileInput').onchange=e=>{importFile(e.target.files[0]);e.target.value=''};draw();syncPublishedFeed();initPrivateCloud();
 </script></body></html>
