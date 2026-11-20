@@ -31,6 +31,30 @@
 .interview-notes{font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:1450px){.grid6{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:730px){.grid6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Alternative roles are a full-width second row, not part of either narrow job column. */
+.job{grid-template-columns:minmax(0,1fr) minmax(112px,140px);align-items:start;row-gap:12px}
+.job>div,.jobside,.alternative-roles,.alternative-info{min-width:0}
+.jobtitle,.why,.jobtop,.tagline,.jobside,.alternative-info{overflow-wrap:anywhere}
+.job .pill,.alternative-roles .pill{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.job .tagline .pill{border-radius:8px}
+.jobside .btn{width:100%;max-width:100%;white-space:normal;line-height:1.35}
+.jobside .pay,.jobside .fineprint{max-width:100%;overflow-wrap:anywhere}
+.alternative-roles{padding:12px 14px;border:1px solid var(--hair);background:#f7f9fb;border-radius:10px}
+.job>.alternative-roles{grid-column:1/-1;margin:0}
+.drawerbody .alternative-roles{margin:14px 0}
+.alternative-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;padding-bottom:8px;font-size:12px}
+.alternative-heading strong{color:var(--ink)}
+.alternative-heading .tiny{font-size:11px}
+.alternative-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 14px;padding:10px 0;border-top:1px solid var(--hair)}
+.alternative-row:last-child{padding-bottom:0}
+.alternative-info>strong{display:block;font-size:13px;line-height:1.4}
+.alternative-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted);margin-top:4px}
+.alternative-warning{margin-top:5px;overflow-wrap:anywhere}
+.alternative-row .btn{white-space:normal;justify-self:end}
+@media(max-width:730px){.job{grid-template-columns:minmax(0,1fr) minmax(89px,112px);gap:10px 12px}.alternative-roles{padding:10px}.alternative-row{grid-template-columns:minmax(0,1fr)}.alternative-row .btn{justify-self:start}}
+@media(max-width:420px){.job{grid-template-columns:minmax(0,1fr)}.jobside{align-items:flex-start;flex-direction:row;flex-wrap:wrap;text-align:left;gap:7px 10px}.jobside .fineprint{flex-basis:100%}.jobside .btn{width:auto;max-width:100%}}
+
 </style></head>
 <body><div class="app"><aside class="sidebar"><div class="logo"><div class="mark">AE</div><div><b>Search Desk</b><small>Career command centre</small></div></div><nav class="nav" id="nav"><button data-view="overview" class="active">▦ &nbsp; Overview</button><button data-view="opportunities">▤ &nbsp; Vacancies</button><button data-view="shortlist">☆ &nbsp; Shortlist</button><button data-view="history">◷ &nbsp; Application history</button><button data-view="followups">◴ &nbsp; Follow-ups</button><button data-view="interviews">▣ &nbsp; Interviews</button><button data-view="documents">▣ &nbsp; Documents</button><button data-view="settings">⚙ &nbsp; Settings & backup</button></nav><div class="sidebar-bottom"><strong>Approval-first workflow</strong><span>Automatic top-three shortlist → review → approve preparation → manually apply. No automated submissions or recruiter contact.</span></div></aside>
 <main class="main">
@@ -158,10 +182,10 @@ function alternativeRoles(j){
 }
 function alternativeRoleNote(j,detail=false){
  const others=alternativeRoles(j);if(!others.length)return '';
- return '<div style="border-left:3px solid var(--blue);padding:8px 10px;margin:10px 0;background:var(--bg);border-radius:6px"><b>Other roles at '+esc(j.company)+'</b><div class="tiny">One primary application; retain alternatives for discussion with the recruiter. Verify availability before applying.</div>'+others.map(x=>{
+ return '<section class="alternative-roles" aria-label="Alternative vacancies"><div class="alternative-heading"><strong>Alternative '+(others.length===1?'role':'roles')+'</strong><span class="tiny">For recruiter discussion, not a second application</span></div>'+others.map(x=>{
   const salary=x.salaryMin==null?'Base unconfirmed':money(x.salaryMin)+(x.salaryMax!=null&&x.salaryMax!==x.salaryMin?'–'+money(x.salaryMax):'')+(x.salaryVerified?' advertised base':' unverified');
-  return '<div style="margin-top:7px;font-size:12px">'+esc(x.role)+' · '+esc(salary)+' · '+esc(x.status)+' <button type="button" class="btn small" data-open="'+esc(x.id)+'">Review alternative</button></div>';
- }).join('')+'</div>';
+  return '<div class="alternative-row"><div class="alternative-info"><strong>'+esc(x.role)+'</strong><div class="alternative-meta"><span>'+esc(salary)+'</span><span>'+esc(x.fitScore!=null?x.fitScore+'/100 fit':'Fit not assessed')+'</span>'+pill(x.status,x.status==='Needs verification'?'warning':'')+'</div>'+(detail&&x.reviewFlag?'<div class="tiny alternative-warning">'+esc(x.reviewFlag)+'</div>':'')+'</div><button type="button" class="btn small" data-open="'+esc(x.id)+'">Review alternative</button></div>';
+ }).join('')+'</section>';
 }
 function careersFallback(j){const u=safeJobUrl(j.careersUrl);return u?'<a class="btn small" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">Employer careers page ↗</a>':'';}
 
@@ -187,7 +211,7 @@ function updateJobDocumentsButton(){
  el.style.display=el.hidden?'none':'';
 }
 
-function card(j,i,compact=false){const listing=safeJobUrl(j.url);const sal= j.salaryMin!=null?(j.salaryMax===j.salaryMin?money(j.salaryMin):money(j.salaryMin)+'–'+money(j.salaryMax)):'Not stated';return `<div class="job"><div><div class="jobtop">${i!=null?`<span class="rank">${i+1}</span>`:''}<span class="company">${esc(j.company)}</span>${pill(j.status,j.status==='Needs verification'?'warning':j.status==='Shortlisted'||j.status==='Approved for preparation'?'good':'')}${isAutomaticallyShortlisted(j)?pill('Top 3 fit','blue'):''}</div><div class="jobtitle">${listing?`<a class="joblink" href="${esc(listing)}" target="_blank" rel="noopener noreferrer" title="Open the original job listing in a new tab">${esc(j.role)} ↗</a>`:esc(j.role)}</div><div class="meta"><span>⌖ ${esc(j.location)}</span><span>◫ ${esc(j.pattern)}</span><span>▦ ${esc(j.industry)}</span><span>◷ ${dateFmt(j.datePosted)}</span></div><div class="why"><b>Strength:</b> ${esc(j.strengths?.[0]||'Review required')}<br><b>Material gap:</b> ${esc(j.gaps?.[0]||'None yet recorded')}</div>${j.reviewFlag?`<div class="tagline">${pill(j.reviewFlag,'warning')}</div>`:''}${alternativeRoleNote(j)}</div><div class="jobside"><div class="score">${esc(j.fitScore)}<small>/100</small></div><div class="pay">${sal}</div><span class="fineprint">${j.salaryVerified?'verified advertised base':'estimate / unverified · check base'}</span>${listing?`<a class="btn small" href="${esc(listing)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(j.company)} job advert in a new tab">Open job ↗</a>`:""}${careersFallback(j)}<button class="btn small" data-open="${esc(j.id)}">Review details</button></div></div>`}
+function card(j,i,compact=false){const listing=safeJobUrl(j.url);const sal= j.salaryMin!=null?(j.salaryMax===j.salaryMin?money(j.salaryMin):money(j.salaryMin)+'–'+money(j.salaryMax)):'Not stated';return `<div class="job"><div><div class="jobtop">${i!=null?`<span class="rank">${i+1}</span>`:''}<span class="company">${esc(j.company)}</span>${pill(j.status,j.status==='Needs verification'?'warning':j.status==='Shortlisted'||j.status==='Approved for preparation'?'good':'')}${isAutomaticallyShortlisted(j)?pill('Top 3 fit','blue'):''}</div><div class="jobtitle">${listing?`<a class="joblink" href="${esc(listing)}" target="_blank" rel="noopener noreferrer" title="Open the original job listing in a new tab">${esc(j.role)} ↗</a>`:esc(j.role)}</div><div class="meta"><span>⌖ ${esc(j.location)}</span><span>◫ ${esc(j.pattern)}</span><span>▦ ${esc(j.industry)}</span><span>◷ ${dateFmt(j.datePosted)}</span></div><div class="why"><b>Strength:</b> ${esc(j.strengths?.[0]||'Review required')}<br><b>Material gap:</b> ${esc(j.gaps?.[0]||'None yet recorded')}</div>${j.reviewFlag?`<div class="tagline">${pill(j.reviewFlag,'warning')}</div>`:''}</div><div class="jobside"><div class="score">${esc(j.fitScore)}<small>/100</small></div><div class="pay">${sal}</div><span class="fineprint">${j.salaryVerified?'verified advertised base':'estimate / unverified · check base'}</span>${listing?`<a class="btn small" href="${esc(listing)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(j.company)} job advert in a new tab">Open job ↗</a>`:""}${careersFallback(j)}<button class="btn small" data-open="${esc(j.id)}">Review details</button></div>${alternativeRoleNote(j)}</div>`}
 function followUpItems(){
  const terminal=new Set(['Rejected','Withdrawn','Hired','Do not show']);
  const records=Array.isArray(data?.history)?data.history:[];
