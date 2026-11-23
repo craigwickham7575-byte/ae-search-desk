@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-20T08:34:50+00:00",
+  "generatedAt": "2026-11-23T08:54:32+00:00",
   "providers": [
-    "Previously researched employer leads (2)",
+    "Previously researched employer leads (1)",
     "Remotive (0)"
   ],
   "warnings": [
@@ -12,44 +12,6 @@
   "freshnessDays": 14,
   "purpose": "Unverified leads; OTE and salary estimates never equal verified base",
   "jobs": [
-    {
-      "patternDetail": "Employer lists UK-only remote work; confirm any attendance expectations",
-      "industry": "Video infrastructure / digital health",
-      "dateChecked": "2026-11-16",
-      "contact": "",
-      "followUp": "",
-      "isApplied": false,
-      "isRejected": false,
-      "shortlisted": false,
-      "lastAction": "",
-      "status": "New",
-      "id": "research-whereby-ae-2026-11",
-      "company": "Whereby",
-      "role": "Account Executive",
-      "location": "United Kingdom",
-      "pattern": "Remote",
-      "employment": "Permanent",
-      "datePosted": "2026-11-06",
-      "url": "https://jobs.lever.co/whereby/5b65c373-e4c7-4216-804e-4f2336431043",
-      "source": "Whereby careers (official); 6 Nov date via Careertela",
-      "sourceQuality": "Employer confirms permanent UK-remote and £55,000 annual base; posting date independently indexed on 6 Nov; still check before applying.",
-      "salaryMin": 55000,
-      "salaryMax": 55000,
-      "salaryText": "Guaranteed annual base £55,000 + uncapped commission (employer advertised)",
-      "salaryVerified": true,
-      "fitScore": 88,
-      "strengths": [
-        "Consultative full-cycle B2B new business and customer discovery",
-        "Self-sourced outbound pipeline, multi-stakeholder negotiation and closing",
-        "Experience selling AI/SaaS solutions and developing ROI-led business cases"
-      ],
-      "gaps": [
-        "No verified experience selling developer APIs or digital healthcare solutions",
-        "Technical evaluations and healthcare-sector procurement would require preparation"
-      ],
-      "reviewFlag": "Specialist API/healthcare experience gap; check eligibility and live status",
-      "notes": "Research lead from official Whereby careers page on 16 Nov 2026. Date posted via independent listing. No application or recruiter contact authorised."
-    },
     {
       "patternDetail": "Employer lists London and on-site; exact attendance pattern to confirm",
       "industry": "AI / cybersecurity",
